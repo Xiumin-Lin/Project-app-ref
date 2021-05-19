@@ -17,38 +17,50 @@ public class ServiceRegistry {
 
 	// ajoute une classe de service après contrôle de la norme BRi
 	public static void addService(Class<?> classe) {
-		System.out.println("In add serv function for " + classe.getName());
+		System.out.println("Adding new service " + classe.getName());
 		// vérifier la conformité par introspection
 		// si non conforme --> exception avec message clair
 		// si conforme, ajout au vector
-		if(isNormeBRi(classe)) {
-			System.out.println("True => Adding");
-		}
-//		servicesClasses.add(classe.newInstance());
+		// TODO à Finir
+//		if(isNormeBRi(classe)) {
+//			System.out.println("True => Adding");
+//		}
+		// TODO à corriger newInstance()
+		servicesClasses.add(classe);
 	}
 
 	// renvoie la classe de service (numService -1)
-	public static void getServiceClass(int numService) {
-
+	public static Class<?> getServiceClass(int numService) {
+		return servicesClasses.get(numService - 1);
 	}
 
 	// liste les activités présentes
 	public static String toStringue() {
 		StringBuilder result = new StringBuilder("Activités présentes :##");
-		// TODO
+		if(servicesClasses.isEmpty())
+			result.append("Aucun service disponible !##");
+		else {
+			int i = 1;
+			for (Class<?> service : servicesClasses) {
+				// TODO à remplacer par toStringue()
+				result.append(i + ") " + service.getName() + "##");
+				i++;
+			}
+		}
 		return result.toString();
 	}
 
 	private static boolean isNormeBRi(Class<?> classe) {
 		String classeName = classe.getName();
 		int modifiers = classe.getModifiers();
+		String errMsg = "[Norme BRi] ";
 		// ne pas être abstract
 		if(!Modifier.isAbstract(modifiers)) {
-			System.out.println(classeName + " is not abstract !");
+			System.out.println(errMsg + classeName + " should not be abstract !");
 			return false;
 			// être publique
 		} else if(!Modifier.isPublic(modifiers)) {
-			System.out.println(classeName + " is not public !");
+			System.out.println(errMsg + classeName + " is not public !");
 			return false;
 		}
 
@@ -75,7 +87,8 @@ public class ServiceRegistry {
 		return true;
 	}
 
-	public void updateService(String serviceName) {
+	public static void updateService(Class<?> serviceClass) {
+		System.out.println("Update service " + serviceClass.getName());
 		// TODO
 	}
 

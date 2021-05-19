@@ -8,9 +8,17 @@ public class Programmeur {
 
 	public Programmeur(String login, String pwd, String pathServerFTP) {
 		// TODO check path correct
-		this.setLogin(login);
-		this.setPassword(pwd);
+		this.login = login;
+		this.password = pwd;
 		this.serverFTP = pathServerFTP;
+	}
+
+	public String getLogin() {
+		return login;
+	}
+
+	public String getPassword() {
+		return password;
 	}
 
 	public String getServerFTP() {
@@ -21,28 +29,12 @@ public class Programmeur {
 		this.serverFTP = serverFTP;
 	}
 
-	public String getLogin() {
-		return login;
-	}
-
-	public void setLogin(String login) {
-		this.login = login;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
 	public Boolean getIsCertifiedBri() {
 		return isCertifiedBRi;
 	}
 
-	public void setIsCertifiedBri(Boolean isCertifiedBRi) {
-		this.isCertifiedBRi = isCertifiedBRi;
+	public void setIsCertifiedBri(Boolean bool) {
+		this.isCertifiedBRi = bool;
 	}
 
 }

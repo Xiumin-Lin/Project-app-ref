@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+import bri.Port;
+
 /*
  * Ce client se connecte à un serveur dont le protocole est 
  * menu-choix-question-réponse client-réponse service
@@ -16,8 +18,8 @@ import java.net.Socket;
  * ainsi que tout service qui pose une question, traite la donnée du client et envoie sa réponse 
  * mais est bien sur susceptible de (nombreuses) améliorations
  */
-public class clientama {
-	private final static int PORT_AMA = 3000;
+public class ClientAma {
+	private final static int PORT_AMA = Port.AMATEUR.getNumber();
 	private final static String HOST = "localhost";
 
 	public static void main(String[] args) {
@@ -43,14 +45,14 @@ public class clientama {
 			// réception/affichage de la réponse
 			System.out.println(sin.readLine());
 
-		} catch (IOException e) {
+		} catch(IOException e) {
 			System.err.println("Fin de la connexion");
 		}
 
 		try {
 			if(s != null)
 				s.close();
-		} catch (Exception e) {
+		} catch(Exception e) {
 			e.printStackTrace();
 		}
 	}
