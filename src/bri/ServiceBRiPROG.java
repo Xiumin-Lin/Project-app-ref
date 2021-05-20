@@ -43,48 +43,51 @@ class ServiceBRiPROG implements Runnable {
 
 		try {
 			client.close();
-		} catch(IOException e2) {
-			e2.printStackTrace();
+		} catch(IOException e) {
+			e.printStackTrace();
 		}
 	}
 
 	private void authentification(BufferedReader in, PrintWriter out) {
 		StringBuilder sb = new StringBuilder();
 		int choice;
-		try {
-			while(!clientIsLogin()) {
-				sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
-				out.println(sb.toString()); // Send msg to client
-				sb.setLength(0); // Clear StringBuilder
-				choice = Integer.parseInt(in.readLine());
 
-				out.println("Votre login :");
-				String login = in.readLine();
-				out.println("Votre mot de passe :");
-				String pwd = in.readLine();
+		while(!clientIsLogin()) {
+			sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+			out.println(sb.toString()); // send msg to client
+			sb.setLength(0); // clear StringBuilder
+
+			try {
+				choice = Integer.parseInt(in.readLine());
 
 				switch(choice) {
 				case 1: // connexion
+					out.println("Login :");
+					String login = in.readLine();
+					out.println("Mot de passe :");
+					String pwd = in.readLine();
 					this.prog = ProgRegistry.ProgAuthentification(login, pwd);
-					if(!clientIsLogin()) {
-						sb.append("Authentification Echoué !####");
-					}
 					break;
 				case 2: // creation de compte
+					out.println("Nouveau Login :");
+					String newLogin = in.readLine();
+					out.println("Nouveau Mot de passe :");
+					String newPwd = in.readLine();
 					out.println("Le lien de votre serveur FTP (Ex: ftp://localhost:2121/classes/) :");
 					String pathFTP = in.readLine();
-					this.prog = new Programmeur(login, pwd, pathFTP);
-					// TODO
+					Programmeur newProg = new Programmeur(newLogin, newPwd, pathFTP);
+					ProgRegistry.addProg(newProg);
+					this.prog = newProg;
 					break;
 				case 0: // exit
 					out.println("");
 					break;
 				default:
-					sb.append("Choix invalide !####");
+					throw new Exception("Choix invalide !");
 				}
+			} catch(Exception e) {
+				sb.append("[ERROR] Authentification : " + e.getMessage() + "####");
 			}
-		} catch(Exception e) {
-			out.println("[ERROR] Authentification : " + e.getMessage() + "##");
 		}
 	}
 
@@ -98,13 +101,13 @@ class ServiceBRiPROG implements Runnable {
 				+ "##Le service développé doit se situer dans un package portant le même nom que votre login."
 				+ "##Les clients se connectent au serveur amateur port 3000 pour lancer un service##");
 
-		try {
-			while(true) {
-				sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
-				out.println(sb.toString());
-				sb.setLength(0); // clear StringBuilder
-				choice = Integer.parseInt(in.readLine());
+		while(true) {
+			sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+			out.println(sb.toString());
+			sb.setLength(0); // clear StringBuilder
 
+			try {
+				choice = Integer.parseInt(in.readLine());
 				switch(choice) {
 				case 1: // add service
 					out.println("Le Service à ajouter (Ex: login.ServiceInversion) :");
@@ -140,9 +143,9 @@ class ServiceBRiPROG implements Runnable {
 				default:
 					sb.append("Choix invalide !####");
 				}
+			} catch(Exception e) {
+				sb.append("[ERROR] ManageService : " + e.getMessage() + "####");
 			}
-		} catch(Exception e) {
-			out.println("[ERROR] ManageService : " + e.getMessage() + "##");
 		}
 	}
 
@@ -165,17 +168,15 @@ class ServiceBRiPROG implements Runnable {
 	}
 
 	private Class<?> getLoadedClass(String classeName) throws Exception {
-//		System.out.println("[DEBUG] in getLoadedClass");
 		try {
 			// URLClassLoader sur ftp
 			String fileNameURL = prog.getServerFTP();
-//			System.out.println("[DEBUG] fileNameURL = " + fileNameURL);
 			URLClassLoader urlcl = URLClassLoader.newInstance(new URL[] { new URL(fileNameURL) });
 			Class<?> classe = urlcl.loadClass(classeName);
 			return classe;
 		} catch(Exception e) {
 			e.printStackTrace();
-			throw new Exception("[ERROR] : " + e.getMessage() + "##");
+			throw new Exception("[ERROR] Loading Class : " + e.getMessage() + "##");
 		}
 	}
 
