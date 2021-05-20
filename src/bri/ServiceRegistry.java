@@ -85,7 +85,7 @@ public class ServiceRegistry {
 		if(constructors.length != 0) {
 			boolean containSocketConstructor = false;
 			for(Constructor<?> aConstructor : constructors) {
-				if(aConstructor.getParameterTypes().getClass().getName() == Socket.class.getName() && Modifier.isPublic(aConstructor.getModifiers())) {
+				if(aConstructor.getParameterTypes().getClass().getName().equals(Socket.class.getName()) && Modifier.isPublic(aConstructor.getModifiers())) {
 					containSocketConstructor = true;
 				}
 			}
