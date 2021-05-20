@@ -114,7 +114,7 @@ public class ServiceRegistry {
 		if(fields.length != 0) {
 			boolean containSocket = false;
 			for(Field aField : fields) {
-				if(aField.getName().equals("Socket") && Modifier.isPrivate(aField.getModifiers()) && Modifier.isFinal(aField.getModifiers())) {
+				if(aField.getType().getName().equals("Socket") && Modifier.isPrivate(aField.getModifiers()) && Modifier.isFinal(aField.getModifiers())) {
 					containSocket = true;
 				}
 			}
