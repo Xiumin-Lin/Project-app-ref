@@ -132,7 +132,7 @@ public class ServiceRegistry {
 		return true;
 	}
 
-	public static void updarvice(Class<?> serviceClass) {
+	public static void updateService(Class<?> serviceClass) {
 		System.out.println("Update service " + serviceClass.getName());
 		// TODO
 	}
