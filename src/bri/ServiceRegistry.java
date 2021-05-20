@@ -83,10 +83,14 @@ public class ServiceRegistry {
 		// avoir un constructeur public (Socket) sans exception
 		Constructor<?>[] constructors = classe.getConstructors();
 		if(constructors.length != 0) {
-			boolean containSocketConstructor = false;
+			boolean containSocketConstructor = false; 
 			for(Constructor<?> aConstructor : constructors) {
-				if(aConstructor.getParameterTypes().getClass().getName().equals(Socket.class.getName()) && Modifier.isPublic(aConstructor.getModifiers())) {
-					containSocketConstructor = true;
+				if(aConstructor.getParameterCount() == 1 && Modifier.isPublic(aConstructor.getModifiers()) && aConstructor.getExceptionTypes().length == 0) {
+					for(Class<?> aParameterType : aConstructor.getParameterTypes()) {
+						if(aParameterType.getName().equals(Socket.class.getName())) {
+							containSocketConstructor = true;
+					}
+					}
 				}
 			}
 			if(!containSocketConstructor) {
@@ -100,7 +104,7 @@ public class ServiceRegistry {
 		if(methods.length != 0) {
 			boolean containToStringue = false;
 			for (Method aMethod : methods) {
-				if(aMethod.getName().equals("toStringue") && Modifier.isPublic(aMethod.getModifiers()) && Modifier.isStatic(aMethod.getModifiers()) && aMethod.getReturnType().getName().equals(String.class.getName())) 
+				if(aMethod.getName().equals("toStringue") && Modifier.isPublic(aMethod.getModifiers()) && Modifier.isStatic(aMethod.getModifiers()) && aMethod.getReturnType().getName().equals(String.class.getName()) && aMethod.getExceptionTypes().length == 0) 
 					containToStringue = true;
 			}
 			if(!containToStringue) {
@@ -114,7 +118,7 @@ public class ServiceRegistry {
 		if(fields.length != 0) {
 			boolean containSocket = false;
 			for(Field aField : fields) {
-				if(aField.getType().getName().equals("Socket") && Modifier.isPrivate(aField.getModifiers()) && Modifier.isFinal(aField.getModifiers())) {
+				if(aField.getType().getName().equals(Socket.class.getName()) && Modifier.isPrivate(aField.getModifiers()) && Modifier.isFinal(aField.getModifiers())) {
 					containSocket = true;
 				}
 			}
