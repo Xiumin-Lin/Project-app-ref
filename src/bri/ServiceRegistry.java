@@ -1,7 +1,10 @@
 package bri;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.net.Socket;
 import java.util.List;
 import java.util.Vector;
 
@@ -78,12 +81,54 @@ public class ServiceRegistry {
 			}
 		}
 		// avoir un constructeur public (Socket) sans exception
-		// avoir un attribut Socket private final
-		// avoir une méthode public static String toStringue() sans exception
 		Constructor<?>[] constructors = classe.getConstructors();
 		if(constructors.length != 0) {
-
+			boolean containSocketConstructor = false; 
+			for(Constructor<?> aConstructor : constructors) {
+				if(aConstructor.getParameterCount() == 1 && Modifier.isPublic(aConstructor.getModifiers()) && aConstructor.getExceptionTypes().length == 0) {
+					for(Class<?> aParameterType : aConstructor.getParameterTypes()) {
+						if(aParameterType.getName().equals(Socket.class.getName())) {
+							containSocketConstructor = true;
+					}
+					}
+				}
+			}
+			if(!containSocketConstructor) {
+				System.out.println(classeName + " do not have public constructor with Socket parameter");
+				return false;
+			}
 		}
+		
+		// avoir une méthode public static String toStringue() sans exception
+		Method[] methods = classe.getMethods();
+		if(methods.length != 0) {
+			boolean containToStringue = false;
+			for (Method aMethod : methods) {
+				if(aMethod.getName().equals("toStringue") && Modifier.isPublic(aMethod.getModifiers()) && Modifier.isStatic(aMethod.getModifiers()) && aMethod.getReturnType().getName().equals(String.class.getName()) && aMethod.getExceptionTypes().length == 0) 
+					containToStringue = true;
+			}
+			if(!containToStringue) {
+				System.out.println(classeName + " do not have method toStringue");
+				return false;
+			}
+		}
+		
+		// avoir un attribut Socket private final
+		Field[] fields = classe.getDeclaredFields();
+		if(fields.length != 0) {
+			boolean containSocket = false;
+			for(Field aField : fields) {
+				if(aField.getType().getName().equals(Socket.class.getName()) && Modifier.isPrivate(aField.getModifiers()) && Modifier.isFinal(aField.getModifiers())) {
+					containSocket = true;
+				}
+			}
+			if(!containSocket) {
+				System.out.println(classeName + " do not have private final Socket field");
+				return false;
+			}
+		}
+		
+		
 		return true;
 	}
 
