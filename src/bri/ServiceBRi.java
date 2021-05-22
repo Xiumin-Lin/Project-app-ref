@@ -1,27 +1,29 @@
 package bri;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
 
 class ServiceBRi implements Runnable {
 
 	private Socket client; // amateur
+	// network allowing the client to communicate with the server
+	private Communication net;
 
 	public ServiceBRi(Socket socket) {
 		client = socket;
+		net = null;
 	}
 
 	@Override
 	public void run() {
-		try(BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-				PrintWriter out = new PrintWriter(client.getOutputStream(), true);) {
+
+		try {
+			net = new Communication(client);
 			// Envoie la liste des services disponible
-			out.println(ServiceRegistry.toStringue() + "##Tapez le numéro de service désiré :");
-			int choix = Integer.parseInt(in.readLine());
+			net.send(ServiceRegistry.toStringue() + "##Tapez le numéro de service désiré :");
+
+			int choix = Integer.parseInt(net.readLine());
 			Class<?> service = ServiceRegistry.getServiceClass(choix);
 			// instancier le service numéro "choix" en lui passant la socket "client"
 			// invoquer run() pour cette instance ou la lancer dans un thread à part
@@ -29,17 +31,18 @@ class ServiceBRi implements Runnable {
 				service.getDeclaredConstructor(Socket.class).newInstance(client);
 			} catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 					| NoSuchMethodException | SecurityException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
+				System.err.println("[ERROR] Create New Instance : " + e.getMessage());
 			}
 
 		} catch(IOException e) {
 			// Fin du service
-			System.err.println("[ERROR] : " + e.getMessage());
+			System.err.println("[ERROR] Service BRi : " + e.getMessage());
 		}
 
 		try {
 			client.close();
+			net.close();
 		} catch(IOException e2) {
 			e2.printStackTrace();
 		}
@@ -54,5 +57,4 @@ class ServiceBRi implements Runnable {
 	public void start() {
 		(new Thread(this)).start();
 	}
-
 }

@@ -1,154 +1,55 @@
 package bri;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.net.URLClassLoader;
 
 class ServiceBRiPROG implements Runnable {
 
-	private Socket client; // programmeur
+	private Socket client; // programmeur's socket
 	private Programmeur prog;
+	// network allowing the client to communicate with the server
+	private Communication net;
 
 	public ServiceBRiPROG(Socket socket) {
 		client = socket;
 		prog = null;
+		net = null;
 	}
 
 	@Override
 	public void run() {
-		try(BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
-				PrintWriter out = new PrintWriter(client.getOutputStream(), true);) {
+		try {
+			System.out.println("[Thread ServiceBRiPROG] Connect : " + Thread.currentThread().getName());
+			net = new Communication(client);
 
-			int choice;
-			StringBuilder sb = new StringBuilder();
+			net.write("Bonjour et Bienvenue au Service BRi pour les programmeurs !##");
+			net.write("Les prog doivent s'authentifier afin d'utiliser le service Bri.");
 
-			sb.append("Bonjour et Bienvenue au Service BRi pour les programmeurs !##");
-			sb.append("Les prog doivent s'authentifier afin d'utiliser le service Bri.");
+			this.authentification(); // Authentification
+			if(clientIsLogin()) // Sends the list of available BRi services
+				this.manageService();
 
-			// Authentification
-			this.authentification(in, out);
-
-			// Envoie de la liste des services BRi disponible
-			if(clientIsLogin())
-				this.manageService(in, out);
-
-		} catch(IOException e) {
-			// Fin du service
-			System.err.println("[ERROR] Service BRi : " + e.getMessage());
+		} catch(IOException e) { // End of service
+			System.err.println("[ERROR] Service BRi Prog : " + e.getMessage());
 		}
 
-		try {
+		try { // Close socket & communication
 			client.close();
+			net.close();
+			System.out.println("[ServiceBRiPROG Thread] Close : " + Thread.currentThread().getName());
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
 	}
 
-	private void authentification(BufferedReader in, PrintWriter out) {
-		StringBuilder sb = new StringBuilder();
-		int choice;
-
-		while(!clientIsLogin()) {
-			sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
-			out.println(sb.toString()); // send msg to client
-			sb.setLength(0); // clear StringBuilder
-
-			try {
-				choice = Integer.parseInt(in.readLine());
-
-				switch(choice) {
-				case 1: // connexion
-					out.println("Login :");
-					String login = in.readLine();
-					out.println("Mot de passe :");
-					String pwd = in.readLine();
-					this.prog = ProgRegistry.ProgAuthentification(login, pwd);
-					break;
-				case 2: // creation de compte
-					out.println("Nouveau Login :");
-					String newLogin = in.readLine();
-					out.println("Nouveau Mot de passe :");
-					String newPwd = in.readLine();
-					out.println("Le lien de votre serveur FTP (Ex: ftp://localhost:2121/classes/) :");
-					String pathFTP = in.readLine();
-					Programmeur newProg = new Programmeur(newLogin, newPwd, pathFTP);
-					ProgRegistry.addProg(newProg);
-					this.prog = newProg;
-					break;
-				case 0: // exit
-					out.println("");
-					break;
-				default:
-					throw new Exception("Choix invalide !");
-				}
-			} catch(Exception e) {
-				sb.append("[ERROR] Authentification : " + e.getMessage() + "####");
-			}
-		}
-	}
-
-	private void manageService(BufferedReader in, PrintWriter out) {
-		StringBuilder sb = new StringBuilder();
-		int choice;
-
-		// presentation
-		sb.append("Hello " + this.prog.getLogin() + ", vous être autorisé à utilisé le service BRi pour Prog !");
-		sb.append("##Pour ajouter un service, celui-ci doit étre présent sur votre serveur ftp."
-				+ "##Le service développé doit se situer dans un package portant le même nom que votre login."
-				+ "##Les clients se connectent au serveur amateur port 3000 pour lancer un service##");
-
-		while(true) {
-			sb.append("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
-			out.println(sb.toString());
-			sb.setLength(0); // clear StringBuilder
-
-			try {
-				choice = Integer.parseInt(in.readLine());
-				switch(choice) {
-				case 1: // add service
-					out.println("Le Service à ajouter (Ex: login.ServiceInversion) :");
-					try {
-						String classeName = in.readLine();
-						// charger la classe et la déclarer au ServiceRegistry
-						Class<?> classe = getLoadedClass(classeName);
-						ServiceRegistry.addService(classe);
-						sb.append("Le service a bien été ajouté !####");
-					} catch(Exception e) {
-						sb.append("[ERROR] Add Service : " + e.getMessage() + "##");
-					}
-					break;
-				case 2: // update service
-					out.println("Le Service à mettre à jour (Ex: login.ServiceInversion) :");
-					try {
-						String classeName = in.readLine();
-						Class<?> classe = getLoadedClass(classeName);
-						ServiceRegistry.updateService(classe);
-						sb.append("Le service a bien été mise à jour !####");
-					} catch(Exception e) {
-						sb.append("[ERROR] Update Service : " + e.getMessage() + "##");
-					}
-					break;
-				case 3: // change path to FTP serv
-					out.println("Entrer le nouveau url du serveur FTP :");
-					String newPath = in.readLine();
-					this.prog.setServerFTP(newPath);
-					out.append("Le path a bien été modifié !####");
-					break;
-				case 0: // exit
-					out.println("");
-				default:
-					sb.append("Choix invalide !####");
-				}
-			} catch(Exception e) {
-				sb.append("[ERROR] ManageService : " + e.getMessage() + "####");
-			}
-		}
-	}
-
+	/**
+	 * TODO
+	 * 
+	 * @return
+	 */
 	public String getActionList() {
 		StringBuilder sb = new StringBuilder();
 		if(!clientIsLogin()) {
@@ -163,21 +64,185 @@ class ServiceBRiPROG implements Runnable {
 		return sb.toString();
 	}
 
-	public Boolean clientIsLogin() {
-		return prog != null;
+	/**
+	 * TODO
+	 */
+	private void authentification() {
+		while(!clientIsLogin()) {
+			// send all previous writed msg to client
+			net.send("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+
+			try {
+				int choice = Integer.parseInt(net.readLine());
+
+				switch(choice) {
+				case 1: // connexion
+					connexionProg();
+					break;
+				case 2: // create an account
+					createProgAccount();
+					break;
+				case 0: // exit
+					exit();
+					break;
+				default:
+					throw new Exception("Invalid choice !##");
+				}
+			} catch(Exception e) {
+				net.write("[ERROR] Authentification : " + e.getMessage() + "####");
+			}
+		}
 	}
 
-	private Class<?> getLoadedClass(String classeName) throws Exception {
+	/**
+	 * TODO
+	 */
+	private void manageService() {
+		// presentation
+		net.write("##Hello " + this.prog.getLogin() + ", vous être autorisé à utilisé le service BRi pour Prog !");
+		net.write("##Pour ajouter un service, celui-ci doit étre présent sur votre serveur ftp."
+				+ "##Le service développé doit se situer dans un package portant le même nom que votre login."
+				+ "##Les clients se connectent au serveur amateur port 3000 pour lancer un service##");
+
+		while(true) {
+			net.send("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+
+			try {
+				int choice = Integer.parseInt(net.readLine());
+				switch(choice) {
+				case 1: // add service
+					addProgService();
+					break;
+				case 2: // update service
+					updateProgService();
+					break;
+				case 3: // change path to FTP serv
+					changeProgFTPPath();
+					break;
+				case 0: // exit
+					exit();
+				default:
+					net.write("Choix invalide !##");
+				}
+			} catch(Exception e) {
+				net.write("[ERROR] ManageService : " + e.getMessage() + "####");
+			}
+		}
+	}
+
+	/**
+	 * Communication allowing the user to leave the service
+	 */
+	private void exit() {
+		net.send("");
+	}
+
+	/**
+	 * Communication allowing the user to connect to the BRi service for prog
+	 * 
+	 * @throws IOException
+	 * @throws AuthException
+	 */
+	private void connexionProg() throws IOException, AuthException {
+		net.send("Login :");
+		String login = net.readLine();
+		net.send("Mot de passe :");
+		String pwd = net.readLine();
+		this.prog = ProgRegistry.ProgAuthentification(login, pwd);
+	}
+
+	/**
+	 * Communication allowing the user to create an account to connect to the BRi
+	 * service for the
+	 * 
+	 * @throws IOException
+	 * @throws AuthException
+	 */
+	private void createProgAccount() throws IOException, AuthException {
+		net.send("Nouveau Login :");
+		String newLogin = net.readLine();
+		net.send("Nouveau Mot de passe :");
+		String newPwd = net.readLine();
+		net.send("Le lien de votre serveur FTP (Ex: ftp://localhost:2121/classes/) :");
+		String pathFTP = net.readLine();
+		Programmeur newProg = new Programmeur(newLogin, newPwd, pathFTP);
+		ProgRegistry.addProg(newProg);
+		this.prog = newProg;
+	}
+
+	/**
+	 * TODO
+	 */
+	private void addProgService() {
+		net.send("Le Service à ajouter (Ex: login.ServiceInversion) :");
+		try {
+			String classeName = net.readLine();
+			// charger la classe et la déclarer au ServiceRegistry
+			Class<?> classe = getLoadedClass(classeName);
+			ServiceRegistry.addService(classe);
+			net.write("Le service a bien été ajouté !####");
+		} catch(Exception e) {
+			net.write("[ERROR] Add Service : " + e.getMessage() + "##");
+		}
+	}
+
+	/**
+	 * TODO
+	 */
+	private void updateProgService() {
+		net.send("Le Service à mettre à jour (Ex: login.ServiceInversion) :");
+		try {
+			String classeName = net.readLine();
+			Class<?> classe = getLoadedClass(classeName);
+			ServiceRegistry.updateService(classe);
+			net.write("Le service a bien été mise à jour !####");
+		} catch(Exception e) {
+			net.write("[ERROR] Update Service : " + e.getMessage() + "##");
+		}
+	}
+
+	/**
+	 * TODO
+	 * 
+	 * @param classeName
+	 * @return
+	 * @throws Exception
+	 */
+	private Class<?> getLoadedClass(String classeName) throws ClassNotFoundException, MalformedURLException {
 		try {
 			// URLClassLoader sur ftp
 			String fileNameURL = prog.getServerFTP();
 			URLClassLoader urlcl = URLClassLoader.newInstance(new URL[] { new URL(fileNameURL) });
 			Class<?> classe = urlcl.loadClass(classeName);
 			return classe;
-		} catch(Exception e) {
+		} catch(MalformedURLException e) {
 			e.printStackTrace();
-			throw new Exception("[ERROR] Loading Class : " + e.getMessage() + "##");
+			throw new MalformedURLException("Loading Class Fail, Wrong URL, " + e.getMessage() + "##");
+		} catch(ClassNotFoundException e) {
+			e.printStackTrace();
+			throw new ClassNotFoundException("Loading Class Fail, Not Found " + e.getMessage() + "##");
 		}
+	}
+
+	/**
+	 * TODO
+	 * 
+	 * @throws IOException
+	 */
+	private void changeProgFTPPath() throws IOException {
+		net.send("Entrer le nouveau url du serveur FTP :");
+		String newPath = net.readLine();
+		this.prog.setServerFTP(newPath);
+		net.write("Le path a bien été modifié !####");
+	}
+
+	/**
+	 * TODO
+	 * 
+	 * @return
+	 */
+	public Boolean clientIsLogin() {
+		return prog != null;
 	}
 
 	@Override
@@ -189,5 +254,4 @@ class ServiceBRiPROG implements Runnable {
 	public void start() {
 		(new Thread(this)).start();
 	}
-
 }
