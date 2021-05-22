@@ -70,7 +70,7 @@ class ServiceBRiPROG implements Runnable {
 	private void authentification() {
 		while(!clientIsLogin()) {
 			// send all previous writed msg to client
-			net.send("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+			net.send("##Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
 
 			try {
 				int choice = Integer.parseInt(net.readLine());
@@ -105,7 +105,7 @@ class ServiceBRiPROG implements Runnable {
 				+ "##Les clients se connectent au serveur amateur port 3000 pour lancer un service##");
 
 		while(true) {
-			net.send("Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
+			net.send("##Veillez entrer le numéro de l'action désirée :##" + this.getActionList());
 
 			try {
 				int choice = Integer.parseInt(net.readLine());
@@ -180,7 +180,9 @@ class ServiceBRiPROG implements Runnable {
 			// charger la classe et la déclarer au ServiceRegistry
 			Class<?> classe = getLoadedClass(classeName);
 			ServiceRegistry.addService(classe);
-			net.write("Le service a bien été ajouté !####");
+			net.write("Le service a bien été ajouté !##");
+		} catch(NormBRiException e) {
+			net.write("[ERROR] Non-compliance with the Bri : ##" + e.getMessage() + "##");
 		} catch(Exception e) {
 			net.write("[ERROR] Add Service : " + e.getMessage() + "##");
 		}
@@ -195,7 +197,7 @@ class ServiceBRiPROG implements Runnable {
 			String classeName = net.readLine();
 			Class<?> classe = getLoadedClass(classeName);
 			ServiceRegistry.updateService(classe);
-			net.write("Le service a bien été mise à jour !####");
+			net.write("Le service a bien été mise à jour !##");
 		} catch(Exception e) {
 			net.write("[ERROR] Update Service : " + e.getMessage() + "##");
 		}
@@ -208,19 +210,23 @@ class ServiceBRiPROG implements Runnable {
 	 * @return
 	 * @throws Exception
 	 */
-	private Class<?> getLoadedClass(String classeName) throws ClassNotFoundException, MalformedURLException {
+	private Class<?> getLoadedClass(String classeName) throws Exception {
+		// Check that the package name is the same as the prog login name
+		String[] classeNameSplit = classeName.split("\\.", 2);
+		if(!classeNameSplit[0].equals(this.prog.getLogin()))
+			throw new Exception("The Service package name should be the same as your login name");
+		// URLClassLoader sur ftp
 		try {
-			// URLClassLoader sur ftp
 			String fileNameURL = prog.getServerFTP();
 			URLClassLoader urlcl = URLClassLoader.newInstance(new URL[] { new URL(fileNameURL) });
 			Class<?> classe = urlcl.loadClass(classeName);
 			return classe;
-		} catch(MalformedURLException e) {
-			e.printStackTrace();
-			throw new MalformedURLException("Loading Class Fail, Wrong URL, " + e.getMessage() + "##");
 		} catch(ClassNotFoundException e) {
-			e.printStackTrace();
 			throw new ClassNotFoundException("Loading Class Fail, Not Found " + e.getMessage() + "##");
+		} catch(NoClassDefFoundError e) {
+			throw new ClassNotFoundException("Loading Class Fail, " + e.getMessage() + "##");
+		} catch(MalformedURLException e) {
+			throw new MalformedURLException("Loading Class Fail, Wrong URL, " + e.getMessage() + "##");
 		}
 	}
 
@@ -233,7 +239,7 @@ class ServiceBRiPROG implements Runnable {
 		net.send("Entrer le nouveau url du serveur FTP :");
 		String newPath = net.readLine();
 		this.prog.setServerFTP(newPath);
-		net.write("Le path a bien été modifié !####");
+		net.write("Le path a bien été modifié !##");
 	}
 
 	/**

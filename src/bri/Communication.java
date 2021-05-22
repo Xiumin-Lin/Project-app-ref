@@ -57,7 +57,12 @@ public class Communication implements AutoCloseable {
 	 * Work like the method readLine() of {@link BufferedReader}
 	 */
 	public String readLine() throws IOException {
-		return in.readLine();
+		String s = in.readLine();
+		if(s == null)
+			throw new IOException("Null entry is not allowed");
+		else if(s.isBlank())
+			throw new IOException("Blank or Empty entry is not allowed");
+		return s;
 	}
 
 	/**
