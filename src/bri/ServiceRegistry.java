@@ -18,8 +18,10 @@ public class ServiceRegistry {
 
 	static {
 		servicesClasses = new Vector<Class<?>>();
+		nbStoppedServices = 0;
 	}
 	private static List<Class<?>> servicesClasses;
+	private static int nbStoppedServices;
 
 	/**
 	 * Returns the service class at index (numService - 1) of the list of registered
@@ -39,7 +41,7 @@ public class ServiceRegistry {
 	 * compliant, add to the list of registered services. Else throw exception with
 	 * clear message.
 	 * 
-	 * @param classe - the service to be add
+	 * @param classe - the service class to be add
 	 * @throws Exception        if service already present in the register
 	 * @throws NormBRiException Msg explaining the reason for Norm Bri failure
 	 */
@@ -60,15 +62,15 @@ public class ServiceRegistry {
 	}
 
 	/**
-	 * Update a service in the list of services
+	 * Update a service in the register of services
 	 * 
-	 * @param classe - the service to be update
+	 * @param classe - the service class to be update
 	 * @throws Exception if service not present in the register
 	 */
 	public static void updateService(Class<?> classe) throws Exception {
 		System.out.println("Trying update service : " + classe.getName());
 		Class<?> classToUpdate = null;
-		// check if the service is present in the register6
+		// check if the service is present in the register
 		synchronized (servicesClasses) {
 			for (Class<?> aClass : servicesClasses) {
 				if(aClass.getName().equals(classe.getName())) {
@@ -88,8 +90,36 @@ public class ServiceRegistry {
 		System.out.println("Update Success");
 	}
 
+//public static void startService(String classeName) {}
+
+//public static void stopService(String classeName) {}
+
 	/**
-	 * lists the activities present in the list of available services
+	 * Delete a service in the register of services
+	 * 
+	 * @param classeName - the service class name to delete
+	 * @throws Exception f service not present in the register
+	 */
+	public static void deleteService(String classeName) throws Exception {
+		System.out.println("Trying delete service : " + classeName);
+		synchronized (servicesClasses) {
+			for (Class<?> aClass : servicesClasses) {
+				if(aClass.getName().equals(classeName)) {
+					try {
+						servicesClasses.remove(aClass);
+						System.out.println("Delete Success");
+						return;
+					} catch(ClassCastException | NullPointerException | UnsupportedOperationException e) {
+						throw new Exception("Can't delete " + classeName + " : " + e.getMessage());
+					}
+				}
+			}
+		}
+		throw new Exception(classeName + " not found in registry, no need to delete it");
+	}
+
+	/**
+	 * lists all activities present in the list of available services
 	 * 
 	 * @return lists the activities available
 	 * @throws SecurityException
@@ -204,12 +234,4 @@ public class ServiceRegistry {
 		System.out.println(className + " is not compliant.");
 		throw new NormBRiException(errMsg.toString());
 	}
-
-	// OPTIONAL
-//	public void startService(String serviceName) {}
-//	
-//	public void stopService(String serviceName) {}
-//	
-//	public void deleteService(String serviceName) {}
-
 }

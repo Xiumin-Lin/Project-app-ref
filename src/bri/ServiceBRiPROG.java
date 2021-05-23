@@ -68,6 +68,9 @@ class ServiceBRiPROG implements Runnable {
 			sb.append("1 : Add a new service.##");
 			sb.append("2 : Updating a service.##");
 			sb.append("3 : Change your FTP server address.##");
+			sb.append("4 : Start a service.##");
+			sb.append("5 : Stop a service.##");
+			sb.append("6 : Delete a service.##");
 		}
 		sb.append("0 : <Exit>##");
 		return sb.toString();
@@ -128,14 +131,23 @@ class ServiceBRiPROG implements Runnable {
 			try {
 				int choice = Integer.parseInt(net.readLine());
 				switch(choice) {
-				case 1: // add service
+				case 1: // add a service
 					addProgService();
 					break;
-				case 2: // update service
+				case 2: // update a service
 					updateProgService();
 					break;
 				case 3: // change path to FTP serv
 					changeProgFTPPath();
+					break;
+				case 4: // start a service
+					startProgService();
+					break;
+				case 5: // stop a service
+					stopProgService();
+					break;
+				case 6: // delete a service
+					deleteProgService();
 					break;
 				case 0: // exit
 					exit();
@@ -198,7 +210,7 @@ class ServiceBRiPROG implements Runnable {
 	 * will be displayed indicating whether the addition was successful or not.
 	 */
 	private void addProgService() {
-		net.send("The service to be ADDED using the following syntax => "
+		net.send("Enter the service to be [ADDED] using the following syntax => "
 				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
 		try {
 			String classeName = net.readLine();
@@ -218,7 +230,7 @@ class ServiceBRiPROG implements Runnable {
 	 * Communication allowing the customer to update an existing service on BRi
 	 */
 	private void updateProgService() {
-		net.send("The service to be UPDATED using the following syntax => "
+		net.send("Enter the service to be [UPDATED] using the following syntax => "
 				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) : ");
 		try {
 			String classeName = net.readLine();
@@ -240,10 +252,8 @@ class ServiceBRiPROG implements Runnable {
 	 * @throws Exception Msg explaining the reason for failure
 	 */
 	private Class<?> getLoadedClass(String classeName) throws Exception {
-		// Check that the package name is the same as the prog login name
-		String[] classeNameSplit = classeName.split("\\.", 2);
-		if(!classeNameSplit[0].equals(this.prog.getLogin()))
-			throw new Exception("The Service package name should be the same as your login name !");
+		// if check fail, throw a Exception
+		checkPackNameIsLogin(classeName);
 		// URLClassLoader sur ftp
 		String fileNameURL = prog.getServerFTP();
 		try {
@@ -260,6 +270,20 @@ class ServiceBRiPROG implements Runnable {
 	}
 
 	/**
+	 * Check that the package name is the same as the prog login name
+	 * 
+	 * @param classeName - the service name to check
+	 * @return true if package name matches the login name
+	 * @throws Exception if package name isn't the same as the prog login name
+	 */
+	private Boolean checkPackNameIsLogin(String classeName) throws Exception {
+		String[] classeNameSplit = classeName.split("\\.", 2);
+		if(!classeNameSplit[0].equals(this.prog.getLogin()))
+			throw new Exception("The Service package name should be the same as your login name !");
+		return true;
+	}
+
+	/**
 	 * Change the address of the programmer's ftp server
 	 * 
 	 * @throws IOException
@@ -269,6 +293,36 @@ class ServiceBRiPROG implements Runnable {
 		String newPath = net.readLine();
 		this.prog.setServerFTP(newPath);
 		net.write("The address has been modified !##");
+	}
+
+	private void startProgService() {
+		// TODO Auto-generated method stub
+		net.send("Enter the service to be [STARTED] using the following syntax => "
+				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
+	}
+
+	private void stopProgService() {
+		// TODO Auto-generated method stub
+		net.send("Enter the service to be [STOPPED] using the following syntax => "
+				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
+	}
+
+	/**
+	 * Communication allowing the customer to delete an existing service on BRi
+	 */
+	private void deleteProgService() {
+		net.send("Enter the service to be [DELETED] using the following syntax => "
+				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
+		try {
+			String classeName = net.readLine();
+			// load the class and declare it to the ServiceRegistry
+			checkPackNameIsLogin(classeName);
+			ServiceRegistry.deleteService(classeName);
+			// Success if no exception is thrown by getLoadedClass & addService
+			net.write("The service has been deleted !##");
+		} catch(Exception e) {
+			net.write("[ERROR] in deleteProgService : " + e.getMessage() + "##");
+		}
 	}
 
 	/**
