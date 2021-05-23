@@ -7,7 +7,6 @@ public class Programmeur {
 	private Boolean isCertifiedBRi = true; // for now is true by default
 
 	public Programmeur(String login, String pwd, String pathServerFTP) {
-		// TODO check path correct
 		this.login = login;
 		this.password = pwd;
 		this.serverFTP = pathServerFTP;

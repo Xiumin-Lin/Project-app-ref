@@ -6,6 +6,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
+/**
+ * Class allowing a server socket and a client socket to communicate with each
+ * other
+ *
+ */
 public class Communication implements AutoCloseable {
 	private BufferedReader in;
 	private PrintWriter out;
@@ -22,7 +27,7 @@ public class Communication implements AutoCloseable {
 	 * socket. If a string is already present in the msg, the new string is append
 	 * at the end of the previous one
 	 * 
-	 * @param s the string to be add
+	 * @param s - the string to be add
 	 */
 	public void write(String s) {
 		msg.append(s);
@@ -47,6 +52,8 @@ public class Communication implements AutoCloseable {
 	/**
 	 * Sends the message that was written by the method write(String s) & with a
 	 * final message added at the end. The message is clear after sending.
+	 * 
+	 * @param s - the string to be send
 	 */
 	public void send(String s) {
 		this.write(s);

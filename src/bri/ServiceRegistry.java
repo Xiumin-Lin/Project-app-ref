@@ -2,93 +2,122 @@ package bri;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.Socket;
 import java.util.List;
 import java.util.Vector;
 
+/**
+ * This class is a register of services shared in competition by customers and
+ * service like "add", "update", etc.
+ *
+ */
 public class ServiceRegistry {
-	// cette classe est un registre de services
-	// partagée en concurrence par les clients et les "ajouteurs" de services,
-	// un Vector pour cette gestion est pratique
 
 	static {
-		servicesClasses = new Vector<Class<?>>(); // Class<? extends bri.Service>
+		servicesClasses = new Vector<Class<?>>();
 	}
 	private static List<Class<?>> servicesClasses;
-
-	/**
-	 * Adds a class of service after checking the BRi Norm
-	 * 
-	 * @param classe the service to be add
-	 * @throws NormBRiException
-	 */
-	public static void addService(Class<?> classe) throws NormBRiException {
-		System.out.println("Trying add new service : " + classe.getName());
-		// vérifier la conformité par introspection
-		// si non conforme --> exception avec message clair
-		// si conforme, ajout au vector
-		// TODO à Finir
-		if(isNormBRi(classe)) {
-			System.out.println("Adding Success");
-			servicesClasses.add(classe);
-		} else {
-			System.out.println("Adding Fail");
-		}
-
-	}
 
 	/**
 	 * Returns the service class at index (numService - 1) of the list of registered
 	 * services.
 	 * 
-	 * @param numService (the service index number) + 1
-	 * @return
+	 * @param numService - (the service index number) + 1
+	 * @return the service class at index (numService - 1)
 	 */
-	public static Class<?> getServiceClass(int numService) {
-		return servicesClasses.get(numService - 1);
+	public static Class<?> getServiceClass(int numService) throws IndexOutOfBoundsException {
+		synchronized (servicesClasses) {
+			return servicesClasses.get(numService - 1);
+		}
+	}
+
+	/**
+	 * Adds a class of service after checking the BRi Norm through introspection. If
+	 * compliant, add to the list of registered services. Else throw exception with
+	 * clear message.
+	 * 
+	 * @param classe - the service to be add
+	 * @throws Exception        if service already present in the register
+	 * @throws NormBRiException Msg explaining the reason for Norm Bri failure
+	 */
+	public static void addService(Class<?> classe) throws Exception, NormBRiException {
+		System.out.println("Trying add new service : " + classe.getName());
+		synchronized (servicesClasses) {
+			for (Class<?> aClass : servicesClasses) {
+				if(aClass.getName().equals(classe.getName()))
+					throw new Exception("Can't add! Services already present, try to update it instead##");
+			}
+		}
+		if(isNormBRi(classe)) {
+			System.out.println("Adding Success");
+			synchronized (classe) {
+				servicesClasses.add(classe);
+			}
+		}
+	}
+
+	/**
+	 * update a service in the list of services
+	 * 
+	 * @param serviceClass - the service to be update
+	 */
+	public static void updateService(Class<?> serviceClass) {
+		System.out.println("Update service " + serviceClass.getName());
+		// TODO
 	}
 
 	/**
 	 * lists the activities present in the list of available services
 	 * 
 	 * @return lists the activities available
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws InvocationTargetException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
 	 */
-	public static String toStringue() {
-		StringBuilder result = new StringBuilder("Activités présentes :##");
-		if(servicesClasses.isEmpty())
-			result.append("Aucun service disponible !##");
-		else {
-			int i = 1;
-			for (Class<?> service : servicesClasses) {
-				result.append(i++ + ") " + service.getName() + "##");
+	public static String toStringue() throws NoSuchMethodException, SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		StringBuilder result = new StringBuilder("Available Activities :##");
+		synchronized (servicesClasses) {
+			if(servicesClasses.isEmpty())
+				result.append("No services available !##");
+			else {
+				int i = 1;
+				for (Class<?> service : servicesClasses) {
+					Method toStringue = service.getMethod("toStringue");
+					result.append(i++ + ") " + service.getName() + " => " + toStringue.invoke(null) + "##");
+				}
 			}
 		}
+
 		return result.toString();
 	}
 
 	/**
 	 * Checks if the class respects the bri norm
 	 * 
-	 * @param classe
+	 * @param classe - the class to be checked
 	 * @return true if all the rules are respected else throw a NormBRiException
 	 *         with a message indicating the reason for failure
-	 * @throws NormBRiException
+	 * @throws NormBRiException Msg explaining the reason for failure
 	 */
 	private static boolean isNormBRi(Class<?> classe) throws NormBRiException {
 		int modifiers = classe.getModifiers();
 		String className = "[BRi Norm] " + classe.getName();
 		StringBuilder errMsg = new StringBuilder();
 
-		// ne pas être abstract
+		// not be abstract
 		if(Modifier.isAbstract(modifiers)) {
 			errMsg.append(className + " should not be abstract.##");
 		} else if(!Modifier.isPublic(modifiers)) {
 			errMsg.append(className + " is not public.##");
 		}
 
-		// implémenter l'interface bri.Service
+		// implement the bri.Service interface
 		Class<?>[] interfaceClasses = classe.getInterfaces();
 		if(interfaceClasses.length != 0) {
 			boolean containService = false;
@@ -103,7 +132,7 @@ public class ServiceRegistry {
 			}
 		}
 
-		// avoir un constructeur public (Socket) sans exception
+		// have a public constructor (Socket) with no exceptions
 		Constructor<?>[] constructors = classe.getConstructors();
 		boolean containSocketConstructor = false;
 		for (Constructor<?> aConstructor : constructors) {
@@ -120,7 +149,7 @@ public class ServiceRegistry {
 			errMsg.append(className + " do not have public constructor with Socket parameter.##");
 		}
 
-		// avoir une méthode public static String toStringue() sans exception
+		// have a public static String toString() method without exception
 		Method[] methods = classe.getMethods();
 		boolean containToStringue = false;
 		for (Method aMethod : methods) {
@@ -137,7 +166,7 @@ public class ServiceRegistry {
 			errMsg.append(className + " do not have a public static String toStringue() method without exception.##");
 		}
 
-		// avoir un attribut Socket private final
+		// have private final Socket field
 		Field[] fields = classe.getDeclaredFields();
 		boolean containSocket = false;
 		for (Field aField : fields) {
@@ -153,17 +182,8 @@ public class ServiceRegistry {
 		if(errMsg.toString().isBlank())
 			return true;
 
+		System.out.println(className + " is not compliant.");
 		throw new NormBRiException(errMsg.toString());
-	}
-
-	/**
-	 * update a service in the list of services
-	 * 
-	 * @param serviceClass the service to be update
-	 */
-	public static void updateService(Class<?> serviceClass) {
-		System.out.println("Update service " + serviceClass.getName());
-		// TODO
 	}
 
 	// OPTIONAL

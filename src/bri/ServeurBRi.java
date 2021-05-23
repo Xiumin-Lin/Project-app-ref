@@ -13,13 +13,13 @@ public class ServeurBRi implements Runnable {
 		} catch(IOException e) {
 			throw new RuntimeException(e);
 		}
-		System.out.println("[ServerBRi Thread] : " + Thread.currentThread().getName()); // Debug
+		System.out.println("[Thread ServerBRi] : " + Thread.currentThread().getName()); // Debug
 	}
 
-	// Le serveur ecoute et accepte les connections.
-	// pour chaque connection, il cree selon le port de la socket :
-	// >> soit un ServiceBri pour traiter une demande de connexion d'un amateur
-	// >> soit un ServiceBriPROG pour les demandes d'un programmeurs
+	// The server listens and accepts connections.
+	// for each connection, it creates according to the socket port :
+	// - Port.AMATEUR => a ServiceBri to handle a connection request from amateurs
+	// - Port.PROG => a ServiceBriPROG for requests from programmers
 	@Override
 	public void run() {
 		System.out.println("Starting the BRi Server ! Port " + listen_socket.getLocalPort());
@@ -46,7 +46,7 @@ public class ServeurBRi implements Runnable {
 		}
 	}
 
-	// restituer les ressources --> finalize
+	// return the resources --> finalize
 	@Override
 	protected void finalize() throws Throwable {
 		try {
@@ -56,7 +56,7 @@ public class ServeurBRi implements Runnable {
 		}
 	}
 
-	// lancement du serveur
+	// launch server
 	public void lancer() {
 		(new Thread(this)).start();
 	}
