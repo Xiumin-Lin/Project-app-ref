@@ -6,46 +6,70 @@ import java.net.Socket;
 
 class ServiceBRi implements Runnable {
 
-	private Socket client; // amateur
+	private Socket client; // amateur socket
 	// network allowing the client to communicate with the server
 	private Communication net;
+	private Boolean clientIsExit;
 
 	public ServiceBRi(Socket socket) {
 		client = socket;
 		net = null;
+		clientIsExit = false;
 	}
 
 	@Override
 	public void run() {
 
 		try {
+			System.out.println("[Thread ServiceBRi] Connected : " + Thread.currentThread().getName()); // Debug
 			net = new Communication(client);
-			// Envoie la liste des services disponible
-			net.send(ServiceRegistry.toStringue() + "##Tapez le numéro de service désiré :");
 
-			int choix = Integer.parseInt(net.readLine());
-			Class<?> service = ServiceRegistry.getServiceClass(choix);
-			// instancier le service numéro "choix" en lui passant la socket "client"
-			// invoquer run() pour cette instance ou la lancer dans un thread à part
-			try {
-				service.getDeclaredConstructor(Socket.class).newInstance(client);
-			} catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-					| NoSuchMethodException | SecurityException e) {
-				e.printStackTrace();
-				System.err.println("[ERROR] Create New Instance : " + e.getMessage());
-			}
+			net.write("Hello and Welcome to the BRi Service for amateur !##");
 
-		} catch(IOException e) {
-			// Fin du service
+			do {
+				// Sends the list of available services
+				net.send("##" + ServiceRegistry.toStringue() + "0) <Exit>####Please enter the number of the desired service :");
+				try {
+					// instantiate the service number "choice" by passing it the "client" socket
+					// and then invoke run() for this instance
+					int choice = Integer.parseInt(net.readLine());
+					if(choice != 0) {
+						Class<?> service = ServiceRegistry.getServiceClass(choice);
+						Service newService = (Service) service.getDeclaredConstructor(Socket.class).newInstance(client);
+						newService.run();
+					} else
+						exit();
+
+				} catch(NumberFormatException e) {
+					net.write("[ERROR] Need a integer : " + e.getMessage() + "##");
+				} catch(IndexOutOfBoundsException e) {
+					net.write("[ERROR] Invalid number : " + e.getMessage() + "##");
+				} catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+						| NoSuchMethodException | SecurityException e) {
+					net.write("[ERROR] Service New Instance : " + e.getMessage() + "##");
+				}
+			} while(!this.client.isClosed() && !this.clientIsExit);
+
+		} catch(Exception e) { // End of service
 			System.err.println("[ERROR] Service BRi : " + e.getMessage());
+			e.getStackTrace();
 		}
 
-		try {
+		try { // Close socket & communication
 			client.close();
 			net.close();
+			System.out.println("[Thread ServiceBRi] Closed : " + Thread.currentThread().getName()); // Debug
 		} catch(IOException e2) {
 			e2.printStackTrace();
 		}
+	}
+
+	/**
+	 * Communication allowing the user to leave the service
+	 */
+	private void exit() {
+		net.send("");
+		this.clientIsExit = true;
 	}
 
 	@Override
@@ -53,7 +77,7 @@ class ServiceBRi implements Runnable {
 		client.close();
 	}
 
-	// lancement du service
+	// launch of the service
 	public void start() {
 		(new Thread(this)).start();
 	}

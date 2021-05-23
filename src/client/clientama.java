@@ -3,57 +3,40 @@ package client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.net.Socket;
 
+import bri.Communication;
 import bri.Port;
 
-/*
- * Ce client se connecte à un serveur dont le protocole est 
- * menu-choix-question-réponse client-réponse service
- * il n'y a qu'un échange (pas de boucle)
- * la réponse est saisie au clavier en String
- * 
- * Le protocole d'échange est suffisant pour le tp4 avec ServiceInversion
- * ainsi que tout service qui pose une question, traite la donnée du client et envoie sa réponse 
- * mais est bien sur susceptible de (nombreuses) améliorations
+/**
+ * This client connects to a server whose protocol is to choose a service from
+ * the list displayed, and then use that service. The client's response is typed
+ * into String. Works almost identical to ClientProg, only the connection port
+ * changes. Check {@link Port}
  */
 public class ClientAma {
 	private final static int PORT_AMA = Port.AMATEUR.getNumber();
 	private final static String HOST = "localhost";
 
 	public static void main(String[] args) {
-		Socket s = null;
-		try {
-			s = new Socket(HOST, PORT_AMA);
+		try(Socket s = new Socket(HOST, PORT_AMA);
+				Communication net = new Communication(s);
+				BufferedReader clavier = new BufferedReader(new InputStreamReader(System.in));) {
 
-			BufferedReader sin = new BufferedReader(new InputStreamReader(s.getInputStream()));
-			PrintWriter sout = new PrintWriter(s.getOutputStream(), true);
-			BufferedReader clavier = new BufferedReader(new InputStreamReader(System.in));
+			System.out.println("Connected to Bri server for amateurs " + s.getInetAddress() + ":" + s.getPort());
 
-			System.out.println("Connecté au serveur " + s.getInetAddress() + ":" + s.getPort());
+			// Communicates with the Bri server
+			String line = net.readLine();
+			do {
+				System.out.println(line.replaceAll("##", "\n")); // Displays a message received by the server
+				net.send(clavier.readLine());// Send a response to this message
+				line = net.readLine(); // Wait for the server to respond
+			} while(!line.isBlank()); // Continue while line is not blank or empty
 
-			// Service BRi affiche le menu et choix des services dispo
-			String line = sin.readLine();
-			System.out.println(line.replaceAll("##", "\n")); // TODO
-			// Amateur saisie/envoie son choix
-			sout.println(clavier.readLine());
-			// réception/affichage de la question du service demandé
-			System.out.println(sin.readLine());
-			// saisie clavier/envoie au service de la réponse
-			sout.println(clavier.readLine());
-			// réception/affichage de la réponse
-			System.out.println(sin.readLine());
+			System.out.println("Connection completed. Thank you for using the Bri service!");
 
 		} catch(IOException e) {
-			System.err.println("Fin de la connexion");
-		}
-
-		try {
-			if(s != null)
-				s.close();
-		} catch(Exception e) {
-			e.printStackTrace();
+			System.err.println("End of connection");
 		}
 	}
 }
