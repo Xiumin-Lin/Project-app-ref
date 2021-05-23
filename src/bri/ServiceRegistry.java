@@ -48,25 +48,44 @@ public class ServiceRegistry {
 		synchronized (servicesClasses) {
 			for (Class<?> aClass : servicesClasses) {
 				if(aClass.getName().equals(classe.getName()))
-					throw new Exception("Can't add! Services already present, try to update it instead##");
+					throw new Exception("Can't add! " + classe.getName() + " already present, try to update it instead");
 			}
 		}
 		if(isNormBRi(classe)) {
-			System.out.println("Adding Success");
 			synchronized (classe) {
 				servicesClasses.add(classe);
 			}
+			System.out.println("Addition Success");
 		}
 	}
 
 	/**
-	 * update a service in the list of services
+	 * Update a service in the list of services
 	 * 
-	 * @param serviceClass - the service to be update
+	 * @param classe - the service to be update
+	 * @throws Exception if service not present in the register
 	 */
-	public static void updateService(Class<?> serviceClass) {
-		System.out.println("Update service " + serviceClass.getName());
-		// TODO
+	public static void updateService(Class<?> classe) throws Exception {
+		System.out.println("Trying update service : " + classe.getName());
+		Class<?> classToUpdate = null;
+		// check if the service is present in the register6
+		synchronized (servicesClasses) {
+			for (Class<?> aClass : servicesClasses) {
+				if(aClass.getName().equals(classe.getName())) {
+					classToUpdate = aClass;
+					break;
+				}
+			}
+		}
+		if(classToUpdate == null)
+			throw new Exception(classe.getName() + " not found in registry, try adding it");
+		// check BRi norm
+		if(isNormBRi(classe)) {
+			synchronized (servicesClasses) {
+				servicesClasses.set(servicesClasses.indexOf(classToUpdate), classe);
+			}
+		}
+		System.out.println("Update Success");
 	}
 
 	/**

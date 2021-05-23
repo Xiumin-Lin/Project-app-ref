@@ -67,7 +67,7 @@ class ServiceBRiPROG implements Runnable {
 		} else {
 			sb.append("1 : Add a new service.##");
 			sb.append("2 : Updating a service.##");
-			sb.append("3 : Change your FTP server address##");
+			sb.append("3 : Change your FTP server address.##");
 		}
 		sb.append("0 : <Exit>##");
 		return sb.toString();
