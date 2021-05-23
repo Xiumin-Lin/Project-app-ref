@@ -3,6 +3,7 @@ package bri;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Socket;
+import java.net.SocketException;
 
 class ServiceBRi implements Runnable {
 
@@ -28,7 +29,7 @@ class ServiceBRi implements Runnable {
 
 			do {
 				// Sends the list of available services
-				net.send("##" + ServiceRegistry.toStringue() + "0) <Exit>####Please enter the number of the desired service :");
+				net.send("##" + ServiceRegistry.toStringue() + "0) <Exit>####Please enter the NUMBER of the desired service :");
 				try {
 					// instantiate the service number "choice" by passing it the "client" socket
 					// and then invoke run() for this instance
@@ -46,7 +47,11 @@ class ServiceBRi implements Runnable {
 					net.write("[ERROR] Invalid number : " + e.getMessage() + "##");
 				} catch(InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 						| NoSuchMethodException | SecurityException e) {
-					net.write("[ERROR] Service New Instance : " + e.getMessage() + "##");
+					net.write("[ERROR] Creating New Instance : " + e.getMessage() + "##");
+				} catch(SocketException e) {
+					throw new SocketException(e.getMessage());
+				} catch(IOException e) {
+					net.write("[ERROR] Service BRi : " + e.getMessage() + "##");
 				}
 			} while(!this.client.isClosed() && !this.clientIsExit);
 

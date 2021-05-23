@@ -295,30 +295,54 @@ class ServiceBRiPROG implements Runnable {
 		net.write("The address has been modified !##");
 	}
 
+	/**
+	 * Communication allowing the customer to start an existing service on Bri if it
+	 * is arrested
+	 */
 	private void startProgService() {
-		// TODO Auto-generated method stub
-		net.send("Enter the service to be [STARTED] using the following syntax => "
-				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
+		try {
+			net.write(ServiceRegistry.toStringueStoppedService());
+			net.send("##Enter the service NAME to be [STARTED] or empty to return to the previous menu :");
+			String classeName = net.readLine();
+			checkPackNameIsLogin(classeName);
+			ServiceRegistry.startService(classeName);
+			// Success if no exception is thrown by startService & checkPackNameIsLogin
+			net.write("The service has been started !##");
+		} catch(Exception e) {
+			net.write("[ERROR] in startProgService : " + e.getMessage() + "##");
+		}
 	}
 
+	/**
+	 * Communication allowing the customer to stop (no delete) an existing service
+	 * on BRi
+	 */
 	private void stopProgService() {
-		// TODO Auto-generated method stub
-		net.send("Enter the service to be [STOPPED] using the following syntax => "
-				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
+		try {
+			net.write(ServiceRegistry.toStringue());
+			net.send("##Enter the service NAME to be [STOPPED] or empty to return to the previous menu :");
+			String classeName = net.readLine();
+			checkPackNameIsLogin(classeName);
+			ServiceRegistry.stopService(classeName);
+			// Success if no exception is thrown by stopService & checkPackNameIsLogin
+			net.write("The service has been stopped !##");
+		} catch(Exception e) {
+			net.write("[ERROR] in stopProgService : " + e.getMessage() + "##");
+		}
 	}
 
 	/**
 	 * Communication allowing the customer to delete an existing service on BRi
 	 */
 	private void deleteProgService() {
-		net.send("Enter the service to be [DELETED] using the following syntax => "
-				+ "packageName.ServiceClassName (Ex: login.ServiceInversion) :");
 		try {
+			net.write(ServiceRegistry.toStringue() + "##");
+			net.write(ServiceRegistry.toStringueStoppedService());
+			net.send("##Enter the service NAME to be [DELETED] or empty to return to the previous menu :");
 			String classeName = net.readLine();
-			// load the class and declare it to the ServiceRegistry
 			checkPackNameIsLogin(classeName);
 			ServiceRegistry.deleteService(classeName);
-			// Success if no exception is thrown by getLoadedClass & addService
+			// Success if no exception is thrown by deleteService & checkPackNameIsLogin
 			net.write("The service has been deleted !##");
 		} catch(Exception e) {
 			net.write("[ERROR] in deleteProgService : " + e.getMessage() + "##");

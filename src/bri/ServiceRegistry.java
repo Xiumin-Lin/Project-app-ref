@@ -11,8 +11,10 @@ import java.util.Vector;
 
 /**
  * This class is a register of services shared in competition by customers and
- * service like "add", "update", etc.
- *
+ * service like "add", "update", etc. Register of services is divided into 2
+ * parts, the first part represents the started and available services to
+ * amateurs, and the second part represents the stopped services. The separation
+ * between these 2 parties is indicated by the method firstStoppedServiceIdx()
  */
 public class ServiceRegistry {
 
@@ -24,15 +26,31 @@ public class ServiceRegistry {
 	private static int nbStoppedServices;
 
 	/**
-	 * Returns the service class at index (numService - 1) of the list of registered
-	 * services.
+	 * Index indicating the beginning for the stopped services in the register
+	 * 
+	 * @return the index of the 1st service which is stopped
+	 */
+	public static int firstStoppedServiceIdx() {
+		synchronized (servicesClasses) {
+			int i = servicesClasses.size() - nbStoppedServices;
+			return (i < 0) ? 0 : i;
+		}
+	};
+
+	/**
+	 * Returns the service class at index (numService - 1) of the list of available
+	 * services
 	 * 
 	 * @param numService - (the service index number) + 1
 	 * @return the service class at index (numService - 1)
+	 * @throws IndexOutOfBoundsException
 	 */
 	public static Class<?> getServiceClass(int numService) throws IndexOutOfBoundsException {
+		int index = numService - 1;
 		synchronized (servicesClasses) {
-			return servicesClasses.get(numService - 1);
+			if(index >= 0 && index < firstStoppedServiceIdx())
+				return servicesClasses.get(index);
+			throw new IndexOutOfBoundsException("No service corresponding to this number");
 		}
 	}
 
@@ -55,7 +73,7 @@ public class ServiceRegistry {
 		}
 		if(isNormBRi(classe)) {
 			synchronized (classe) {
-				servicesClasses.add(classe);
+				servicesClasses.add(firstStoppedServiceIdx(), classe);
 			}
 			System.out.println("Addition Success");
 		}
@@ -90,23 +108,83 @@ public class ServiceRegistry {
 		System.out.println("Update Success");
 	}
 
-//public static void startService(String classeName) {}
+	/**
+	 * Start a service in the register of stopped services. The started service is
+	 * move just before the first stopped service in the register. A
+	 * 
+	 * @param classeName - the service class name to start
+	 * @throws Exception if service not present in the stopped service register or
+	 *                   starting failed
+	 */
+	public static void startService(String classeName) throws Exception {
+		System.out.println("Trying start service : " + classeName);
+		Class<?> service = null;
+		synchronized (servicesClasses) {
+			// loop inside the stopped service register
+			for (int i = firstStoppedServiceIdx(); i < servicesClasses.size(); i++) {
+				service = servicesClasses.get(i);
+				if(service.getName().equals(classeName)) {
+					try {
+						servicesClasses.remove(service);
+						servicesClasses.add(firstStoppedServiceIdx(), service);
+						nbStoppedServices--;
+						System.out.println("Starting Success");
+						return;
+					} catch(Exception e) {
+						throw new Exception("Can't start " + classeName + " : " + e.getMessage());
+					}
+				}
+			}
+		}
+		throw new Exception(
+				classeName + " not found in registry of stopped service, maybe doesn't exist or already started ");
+	}
 
-//public static void stopService(String classeName) {}
+	/**
+	 * Stop a service in the register of available services. The stopped service is
+	 * move the end of the register
+	 * 
+	 * @param classeName - the service class name to stop
+	 * @throws Exception if service not present in the available service register or
+	 *                   stop failed
+	 */
+	public static void stopService(String classeName) throws Exception {
+		System.out.println("Trying stop service : " + classeName);
+		Class<?> service = null;
+		synchronized (servicesClasses) {
+			// loop inside the register without taking into account the arrested services
+			for (int i = 0; i < firstStoppedServiceIdx(); i++) {
+				service = servicesClasses.get(i);
+				if(service.getName().equals(classeName)) {
+					try { // if find, move the class to be stopped at the end of the register
+						servicesClasses.remove(service);
+						servicesClasses.add(service);
+						nbStoppedServices++;
+						System.out.println("Stopping Success");
+						return;
+					} catch(Exception e) {
+						throw new Exception("Can't stop " + classeName + " : " + e.getMessage());
+					}
+				}
+			}
+		}
+		throw new Exception(
+				classeName + " not found in registry of available service, maybe doesn't exist or already stopped ");
+	}
 
 	/**
 	 * Delete a service in the register of services
 	 * 
 	 * @param classeName - the service class name to delete
-	 * @throws Exception f service not present in the register
+	 * @throws Exception if service not present in the register or deletion failed
 	 */
 	public static void deleteService(String classeName) throws Exception {
 		System.out.println("Trying delete service : " + classeName);
 		synchronized (servicesClasses) {
-			for (Class<?> aClass : servicesClasses) {
-				if(aClass.getName().equals(classeName)) {
+			for (Class<?> service : servicesClasses) {
+				if(service.getName().equals(classeName)) {
 					try {
-						servicesClasses.remove(aClass);
+						servicesClasses.remove(service);
 						System.out.println("Delete Success");
 						return;
 					} catch(ClassCastException | NullPointerException | UnsupportedOperationException e) {
@@ -119,7 +197,7 @@ public class ServiceRegistry {
 	}
 
 	/**
-	 * lists all activities present in the list of available services
+	 * lists all available activities present in the register of services
 	 * 
 	 * @return lists the activities available
 	 * @throws SecurityException
@@ -132,17 +210,34 @@ public class ServiceRegistry {
 			IllegalArgumentException, InvocationTargetException {
 		StringBuilder result = new StringBuilder("Available Activities :##");
 		synchronized (servicesClasses) {
-			if(servicesClasses.isEmpty())
+			if(servicesClasses.isEmpty() || firstStoppedServiceIdx() == 0)
 				result.append("No services available !##");
 			else {
-				int i = 1;
-				for (Class<?> service : servicesClasses) {
-					Method toStringue = service.getMethod("toStringue");
-					result.append(i++ + ") " + service.getName() + " => " + toStringue.invoke(null) + "##");
+				for (int i = 0; i < firstStoppedServiceIdx(); i++) {
+					Method toStringue = servicesClasses.get(i).getMethod("toStringue");
+					result.append((i + 1) + ") " + servicesClasses.get(i).getName() + " => " + toStringue.invoke(null) + "##");
 				}
 			}
 		}
+		return result.toString();
+	}
 
+	/**
+	 * lists the stopped activities in the register of services
+	 * 
+	 * @return lists the stopped activities
+	 */
+	public static String toStringueStoppedService() {
+		StringBuilder result = new StringBuilder("Stopped Activities :##");
+		synchronized (servicesClasses) {
+			if(servicesClasses.isEmpty() || nbStoppedServices == 0)
+				result.append("No stopped services !##");
+			else {
+				for (int i = firstStoppedServiceIdx(); i < servicesClasses.size(); i++) {
+					result.append("[x_x] " + servicesClasses.get(i).getName() + "##");
+				}
+			}
+		}
 		return result.toString();
 	}
 
