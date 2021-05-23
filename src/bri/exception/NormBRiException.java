@@ -1,4 +1,4 @@
-package bri;
+package bri.exception;
 
 public class NormBRiException extends Exception {
 

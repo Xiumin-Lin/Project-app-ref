@@ -7,10 +7,15 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
+import bri.exception.AuthException;
+import bri.exception.NormBRiException;
+import bri.prog.ProgRegistry;
+import bri.prog.Programmer;
+
 class ServiceBRiPROG implements Runnable {
 
 	private Socket client; // programmeur's socket
-	private Programmeur prog;
+	private Programmer prog;
 	// network allowing the client to communicate with the server
 	private Communication net;
 	private Boolean clientIsExit;
@@ -199,7 +204,7 @@ class ServiceBRiPROG implements Runnable {
 		String newPwd = net.readLine();
 		net.send("Your FTP server address (Ex: ftp://localhost:2121/classes/) :");
 		String pathFTP = net.readLine();
-		Programmeur newProg = new Programmeur(newLogin, newPwd, pathFTP);
+		Programmer newProg = new Programmer(newLogin, newPwd, pathFTP);
 		ProgRegistry.addProg(newProg);
 		// Success if addProg didn't throw AuthException
 		this.prog = newProg;
@@ -302,7 +307,7 @@ class ServiceBRiPROG implements Runnable {
 	private void startProgService() {
 		try {
 			net.write(ServiceRegistry.toStringueStoppedService());
-			net.send("##Enter the service NAME to be [STARTED] or empty to return to the previous menu :");
+			net.send("##Enter the stopped service NAME to be [STARTED] or empty to return to the previous menu :");
 			String classeName = net.readLine();
 			checkPackNameIsLogin(classeName);
 			ServiceRegistry.startService(classeName);
@@ -320,7 +325,7 @@ class ServiceBRiPROG implements Runnable {
 	private void stopProgService() {
 		try {
 			net.write(ServiceRegistry.toStringue());
-			net.send("##Enter the service NAME to be [STOPPED] or empty to return to the previous menu :");
+			net.send("##Enter the started service NAME to be [STOPPED] or empty to return to the previous menu :");
 			String classeName = net.readLine();
 			checkPackNameIsLogin(classeName);
 			ServiceRegistry.stopService(classeName);

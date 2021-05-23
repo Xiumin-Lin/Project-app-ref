@@ -1,4 +1,4 @@
-package bri;
+package bri.exception;
 
 public class AuthException extends Exception {
 

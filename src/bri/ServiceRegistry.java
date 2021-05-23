@@ -9,6 +9,8 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Vector;
 
+import bri.exception.NormBRiException;
+
 /**
  * This class is a register of services shared in competition by customers and
  * service like "add", "update", etc. Register of services is divided into 2
@@ -22,8 +24,8 @@ public class ServiceRegistry {
 		servicesClasses = new Vector<Class<?>>();
 		nbStoppedServices = 0;
 	}
-	private static List<Class<?>> servicesClasses;
-	private static int nbStoppedServices;
+	private static List<Class<?>> servicesClasses; // services register
+	private static int nbStoppedServices; // counts the number of services stopped
 
 	/**
 	 * Index indicating the beginning for the stopped services in the register
@@ -184,7 +186,10 @@ public class ServiceRegistry {
 			for (Class<?> service : servicesClasses) {
 				if(service.getName().equals(classeName)) {
 					try {
-						servicesClasses.remove(service);
+						int index = servicesClasses.indexOf(service);
+						servicesClasses.remove(index);
+						if(index >= firstStoppedServiceIdx())
+							nbStoppedServices--;
 						System.out.println("Delete Success");
 						return;
 					} catch(ClassCastException | NullPointerException | UnsupportedOperationException e) {
@@ -194,51 +199,6 @@ public class ServiceRegistry {
 			}
 		}
 		throw new Exception(classeName + " not found in registry, no need to delete it");
-	}
-
-	/**
-	 * lists all available activities present in the register of services
-	 * 
-	 * @return lists the activities available
-	 * @throws SecurityException
-	 * @throws NoSuchMethodException
-	 * @throws InvocationTargetException
-	 * @throws IllegalArgumentException
-	 * @throws IllegalAccessException
-	 */
-	public static String toStringue() throws NoSuchMethodException, SecurityException, IllegalAccessException,
-			IllegalArgumentException, InvocationTargetException {
-		StringBuilder result = new StringBuilder("Available Activities :##");
-		synchronized (servicesClasses) {
-			if(servicesClasses.isEmpty() || firstStoppedServiceIdx() == 0)
-				result.append("No services available !##");
-			else {
-				for (int i = 0; i < firstStoppedServiceIdx(); i++) {
-					Method toStringue = servicesClasses.get(i).getMethod("toStringue");
-					result.append((i + 1) + ") " + servicesClasses.get(i).getName() + " => " + toStringue.invoke(null) + "##");
-				}
-			}
-		}
-		return result.toString();
-	}
-
-	/**
-	 * lists the stopped activities in the register of services
-	 * 
-	 * @return lists the stopped activities
-	 */
-	public static String toStringueStoppedService() {
-		StringBuilder result = new StringBuilder("Stopped Activities :##");
-		synchronized (servicesClasses) {
-			if(servicesClasses.isEmpty() || nbStoppedServices == 0)
-				result.append("No stopped services !##");
-			else {
-				for (int i = firstStoppedServiceIdx(); i < servicesClasses.size(); i++) {
-					result.append("[x_x] " + servicesClasses.get(i).getName() + "##");
-				}
-			}
-		}
-		return result.toString();
 	}
 
 	/**
@@ -328,5 +288,50 @@ public class ServiceRegistry {
 
 		System.out.println(className + " is not compliant.");
 		throw new NormBRiException(errMsg.toString());
+	}
+
+	/**
+	 * lists all available activities present in the register of services
+	 * 
+	 * @return lists the activities available
+	 * @throws SecurityException
+	 * @throws NoSuchMethodException
+	 * @throws InvocationTargetException
+	 * @throws IllegalArgumentException
+	 * @throws IllegalAccessException
+	 */
+	public static String toStringue() throws NoSuchMethodException, SecurityException, IllegalAccessException,
+			IllegalArgumentException, InvocationTargetException {
+		StringBuilder result = new StringBuilder("Available Activities :##");
+		synchronized (servicesClasses) {
+			if(servicesClasses.isEmpty() || firstStoppedServiceIdx() == 0)
+				result.append("No services available !##");
+			else {
+				for (int i = 0; i < firstStoppedServiceIdx(); i++) {
+					Method toStringue = servicesClasses.get(i).getMethod("toStringue");
+					result.append((i + 1) + ") " + servicesClasses.get(i).getName() + " => " + toStringue.invoke(null) + "##");
+				}
+			}
+		}
+		return result.toString();
+	}
+
+	/**
+	 * lists the stopped activities in the register of services
+	 * 
+	 * @return lists the stopped activities
+	 */
+	public static String toStringueStoppedService() {
+		StringBuilder result = new StringBuilder("Stopped Activities :##");
+		synchronized (servicesClasses) {
+			if(servicesClasses.isEmpty() || nbStoppedServices == 0)
+				result.append("No stopped services !##");
+			else {
+				for (int i = firstStoppedServiceIdx(); i < servicesClasses.size(); i++) {
+					result.append("[x_x] " + servicesClasses.get(i).getName() + "##");
+				}
+			}
+		}
+		return result.toString();
 	}
 }

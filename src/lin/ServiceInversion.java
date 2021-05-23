@@ -18,7 +18,7 @@ public class ServiceInversion implements bri.Service {
 	public void run() {
 		try(BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
 				PrintWriter out = new PrintWriter(client.getOutputStream(), true);) {
-			out.println("Tapez un texte à inverser");
+			out.println("Tapez un texte à inverser :");
 
 			String line = in.readLine();
 
@@ -27,7 +27,7 @@ public class ServiceInversion implements bri.Service {
 			out.println("Résultat de l'inversion : " + invLine);
 
 			client.close();
-		} catch (IOException e) {
+		} catch(IOException e) {
 			// Fin du service d'inversion
 			e.printStackTrace();
 		}

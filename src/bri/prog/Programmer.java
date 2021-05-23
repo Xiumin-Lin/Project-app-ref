@@ -1,12 +1,12 @@
-package bri;
+package bri.prog;
 
-public class Programmeur {
+public class Programmer {
 	private String login;
 	private String password;
 	private String serverFTP;
 	private Boolean isCertifiedBRi = true; // for now is true by default
 
-	public Programmeur(String login, String pwd, String pathServerFTP) {
+	public Programmer(String login, String pwd, String pathServerFTP) {
 		this.login = login;
 		this.password = pwd;
 		this.serverFTP = pathServerFTP;

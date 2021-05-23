@@ -25,14 +25,14 @@ public class ServeurBRi implements Runnable {
 		System.out.println("Starting the BRi Server ! Port " + listen_socket.getLocalPort());
 		try {
 			if(listen_socket.getLocalPort() == Port.AMATEUR.getNumber()) {
+				System.out.println("[Thread ServeurAMA] : " + Thread.currentThread().getName()); // Debug
 				while(true) {
-					System.out.println("[Thread ServeurAMA] : " + Thread.currentThread().getName()); // Debug
 					new ServiceBRi(listen_socket.accept()).start();
 				}
 
 			} else if(listen_socket.getLocalPort() == Port.PROG.getNumber()) {
+				System.out.println("[Thread ServeurPROG] : " + Thread.currentThread().getName()); // Debug
 				while(true) {
-					System.out.println("[Thread ServeurPROG] : " + Thread.currentThread().getName()); // Debug
 					new ServiceBRiPROG(listen_socket.accept()).start();
 				}
 			}
